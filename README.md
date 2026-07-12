@@ -48,3 +48,8 @@ The repository is designed to support maintainer workflows with:
 - issue templates
 - a pull request template
 - Codex-friendly `AGENTS.md` guidance
+
+## Docs
+
+- [FAQ](./docs/faq.md)
+- [Roadmap](./docs/roadmap.md)
