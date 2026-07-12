@@ -1,12 +1,12 @@
 # codex-pr-reviewer
 
-`codex-pr-reviewer` is a small CLI that helps maintainers pre-review pull requests for Codex-assisted workflows.
+`codex-pr-reviewer` is a small CLI for maintainers who want a fast, opinionated PR pre-review before merge.
 
-It gives a quick risk score, highlights likely review blockers, and keeps the review surface small enough to scan quickly.
+It focuses on blast radius, not raw diff size. The default output is a short score plus a few concrete reasons a PR deserves a deeper human pass.
 
 ## Why this matters
 
-Maintainers need a fast way to decide which pull requests deserve a deeper human pass before merge. This project turns that decision into a short score and a few concrete notes.
+Maintainers need a fast way to decide which pull requests deserve a deeper human pass before merge. This project turns that decision into a short score, a short summary, and a few concrete notes.
 
 ## What it checks
 
@@ -19,12 +19,13 @@ Maintainers need a fast way to decide which pull requests deserve a deeper human
 ## Typical output
 
 ```text
-Codex PR review score: 75/100
+Codex PR review score: 78/100
 Target: /path/to/pr
 Risk level: medium
+Summary: dependency or lockfile change
 
-- [HIGH] Package files changed without tests
-  A package or dependency change should usually ship with at least one test or verification step.
+- [HIGH] Dependency or lockfile change
+  Dependency and lockfile updates deserve closer review because they often alter runtime behavior or supply-chain risk.
 ```
 
 ## Usage
@@ -32,6 +33,12 @@ Risk level: medium
 ```bash
 npm install
 node ./bin/codex-pr-reviewer.js review .
+```
+
+To review a specific folder or PR checkout:
+
+```bash
+node ./bin/codex-pr-reviewer.js review ./path/to/change
 ```
 
 JSON output:
@@ -52,6 +59,12 @@ Repository-specific tuning:
 
 Place that in `.codex-pr-reviewer.json` at the repo root to adjust defaults per repository.
 
+Example:
+
+- set `largeDiffFiles` lower for small libraries
+- set it higher for generated or documentation-heavy repos
+- keep the defaults strict for security-sensitive projects
+
 ## GitHub integration
 
 The repository is designed to support maintainer workflows with:
@@ -60,6 +73,7 @@ The repository is designed to support maintainer workflows with:
 - issue templates
 - a pull request template
 - Codex-friendly `AGENTS.md` guidance
+  - this keeps the repository easy to adopt in real maintainer workflows
 
 ## Docs
 
