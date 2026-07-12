@@ -1,0 +1,16 @@
+name: codex-pr-reviewer
+description: Pre-review pull requests with a lightweight maintainer-focused CLI
+runs:
+  using: composite
+  steps:
+    - shell: bash
+      run: node ./bin/codex-pr-reviewer.js review "${{ inputs.path }}" ${{ inputs.json == 'true' && '--json' || '' }}
+inputs:
+  path:
+    description: Repository path to review
+    required: false
+    default: .
+  json:
+    description: Emit JSON output
+    required: false
+    default: 'false'
