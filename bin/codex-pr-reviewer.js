@@ -6,6 +6,13 @@ import { fileURLToPath, pathToFileURL } from "node:url";
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
 const root = path.resolve(__dirname, "..");
+const defaultConfig = {
+  thresholds: {
+    largeDiffFiles: 25,
+    highRiskScore: 85,
+    mediumRiskScore: 60
+  }
+};
 
 const commands = new Map([
   ["review", runReview],
@@ -31,7 +38,8 @@ async function main() {
 async function runReview(args = []) {
   const target = resolveTarget(args);
   const json = args.includes("--json");
-  const report = await reviewPullRequest(target);
+  const config = await loadConfig(target);
+  const report = await reviewPullRequest(target, config);
 
   if (json) {
     console.log(JSON.stringify(report, null, 2));
@@ -44,6 +52,7 @@ async function runReview(args = []) {
   console.log(`Codex PR review score: ${report.score}/100`);
   console.log(`Target: ${target}`);
   console.log(`Risk level: ${report.risk}`);
+  console.log(`Summary: ${report.summary.text}`);
   console.log("");
 
   if (report.findings.length === 0) {
@@ -75,70 +84,158 @@ function resolveTarget(args) {
   return path.resolve(process.cwd(), targetArg ?? ".");
 }
 
-async function reviewPullRequest(target) {
-  const summary = await summarizeTarget(target);
+async function reviewPullRequest(target, config = defaultConfig) {
+  const summary = await summarizeTarget(target, config);
   const findings = [];
+  const reasons = [];
+  const thresholds = {
+    ...defaultConfig.thresholds,
+    ...(config.thresholds || {})
+  };
+
+  if (summary.hasBehaviorChanges && !summary.hasTests) {
+    findings.push({
+      severity: "high",
+      title: "Behavior change without tests",
+      detail: "This is the strongest default signal because it expands blast radius without matching verification."
+    });
+    reasons.push("behavior change without tests");
+  }
+
+  if (summary.touchesDependencyFiles) {
+    findings.push({
+      severity: "high",
+      title: "Dependency or lockfile change",
+      detail: "Dependency and lockfile updates deserve closer review because they often alter runtime behavior or supply-chain risk."
+    });
+    reasons.push("dependency or lockfile change");
+  }
+
+  if (summary.touchesSecuritySurface) {
+    findings.push({
+      severity: "high",
+      title: "Auth, security, or permission code changed",
+      detail: "Security-sensitive code should always receive a deeper human pass."
+    });
+    reasons.push("security-sensitive code");
+  }
+
+  if (summary.touchesMigrationSurface) {
+    findings.push({
+      severity: "high",
+      title: "Database migration or schema change",
+      detail: "Schema changes can be hard to roll back and often need explicit validation."
+    });
+    reasons.push("migration or schema change");
+  }
+
+  if (summary.touchesPublicApiOrConfig) {
+    findings.push({
+      severity: "medium",
+      title: "Public API or config change",
+      detail: "Public-facing interfaces should be reviewed for compatibility and downstream impact."
+    });
+    reasons.push("public API or config change");
+  }
+
+  if (summary.touchesDeploymentSurface) {
+    findings.push({
+      severity: "medium",
+      title: "CI or deployment change",
+      detail: "Changes to CI or deployment behavior can affect how safely the project ships."
+    });
+    reasons.push("CI or deployment change");
+  }
 
   if (summary.hasLargeDiff) {
     findings.push({
-      severity: "high",
+      severity: "low",
       title: "Large diff surface",
-      detail: "Review this change in smaller slices. Big diffs tend to hide regressions and missing tests."
+      detail: "Large diffs raise risk, but they are not a problem by themselves."
     });
+    reasons.push("large diff");
   }
 
-  if (summary.touchesPackageFiles && !summary.hasTests) {
+  if (summary.hasRenames && !summary.hasReviewNotes) {
     findings.push({
-      severity: "high",
-      title: "Package files changed without tests",
-      detail: "A package or dependency change should usually ship with at least one test or verification step."
+      severity: "low",
+      title: "Rename-heavy change",
+      detail: "Rename-only changes are usually discounted after similarity detection unless other signals are present."
     });
+    reasons.push("rename-heavy change");
   }
 
   if (summary.touchesDocsOnly) {
     findings.push({
       severity: "low",
       title: "Docs-only change",
-      detail: "This is low risk, but still check that examples and links stay accurate."
+      detail: "Docs changes are low risk, but links and examples should still be checked."
     });
-  }
-
-  if (summary.hasRenames && !summary.hasReviewNotes) {
-    findings.push({
-      severity: "medium",
-      title: "Rename-heavy change",
-      detail: "Renames often need explicit review notes so maintainers can verify the intent."
-    });
+    reasons.push("docs-only change");
   }
 
   const score = Math.max(0, 100 - findings.reduce((total, item) => {
-    if (item.severity === "high") return total + 25;
-    if (item.severity === "medium") return total + 12;
-    return total + 5;
+    if (item.severity === "high") return total + 22;
+    if (item.severity === "medium") return total + 10;
+    return total + 4;
   }, 0));
+  const summaryText = reasons.length > 0 ? reasons.slice(0, 3).join(", ") : "no immediate review blockers";
 
   return {
     score,
-    risk: score >= 85 ? "low" : score >= 60 ? "medium" : "high",
+    risk: score >= thresholds.highRiskScore ? "low" : score >= thresholds.mediumRiskScore ? "medium" : "high",
+    summary: {
+      text: summaryText,
+      reasons
+    },
     target,
-    summary,
+    signals: summary,
     findings
   };
 }
 
-async function summarizeTarget(target) {
+async function summarizeTarget(target, config = defaultConfig) {
   const files = await listFiles(target);
   const joined = files.join("\n");
+  const thresholds = {
+    ...defaultConfig.thresholds,
+    ...(config.thresholds || {})
+  };
 
   return {
     fileCount: files.length,
-    hasLargeDiff: files.length >= 25,
-    touchesPackageFiles: /package\.json|requirements\.txt|pyproject\.toml|Cargo\.toml|go\.mod/.test(joined),
+    hasLargeDiff: files.length >= thresholds.largeDiffFiles,
+    hasBehaviorChanges: /src|lib|app|index|server|controller|service|route|handler|api/i.test(joined),
+    touchesDependencyFiles: /package\.json|package-lock\.json|pnpm-lock\.yaml|yarn\.lock|requirements\.txt|poetry\.lock|pyproject\.toml|Cargo\.toml|go\.mod|go\.sum/i.test(joined),
     hasTests: /test|tests|__tests__|spec/.test(joined),
     touchesDocsOnly: files.length > 0 && files.every((file) => /\.(md|txt|adoc|rst|yml|yaml)$/.test(file)),
     hasRenames: /rename|moved/i.test(joined),
-    hasReviewNotes: /review notes|review-note|rationale/i.test(joined)
+    hasReviewNotes: /review notes|review-note|rationale/i.test(joined),
+    touchesSecuritySurface: /auth|security|permission|permission|acl|role|rbac|oauth|token|secret|sso/i.test(joined),
+    touchesMigrationSurface: /migration|schema|ddl|db\/migrate|prisma|typeorm|sequelize|knex/i.test(joined),
+    touchesPublicApiOrConfig: /api|public|config|settings|openapi|swagger|schema/i.test(joined),
+    touchesDeploymentSurface: /ci|workflow|deploy|release|action|build/i.test(joined)
   };
+}
+
+async function loadConfig(target) {
+  const configPath = path.join(target, ".codex-pr-reviewer.json");
+  if (!existsSync(configPath)) {
+    return defaultConfig;
+  }
+
+  try {
+    const raw = await readFile(configPath, "utf8");
+    const parsed = JSON.parse(raw);
+    return {
+      thresholds: {
+        ...defaultConfig.thresholds,
+        ...(parsed.thresholds || {})
+      }
+    };
+  } catch {
+    return defaultConfig;
+  }
 }
 
 async function listFiles(directory) {

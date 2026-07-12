@@ -40,6 +40,18 @@ JSON output:
 node ./bin/codex-pr-reviewer.js review . --json
 ```
 
+Repository-specific tuning:
+
+```json
+{
+  "thresholds": {
+    "largeDiffFiles": 40
+  }
+}
+```
+
+Place that in `.codex-pr-reviewer.json` at the repo root to adjust defaults per repository.
+
 ## GitHub integration
 
 The repository is designed to support maintainer workflows with:
