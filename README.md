@@ -65,6 +65,8 @@ Example:
 - set it higher for generated or documentation-heavy repos
 - keep the defaults strict for security-sensitive projects
 
+See [examples/config.example.json](./examples/config.example.json) for a ready-to-copy starting point.
+
 ## GitHub integration
 
 The repository is designed to support maintainer workflows with:
