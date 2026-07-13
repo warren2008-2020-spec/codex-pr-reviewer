@@ -81,14 +81,32 @@ See [examples/config.example.json](./examples/config.example.json) for a ready-t
 
 ## GitHub integration
 
-The repository is designed to support maintainer workflows with:
+Add this workflow to `.github/workflows/codex-pr-review.yml`:
 
-- a composite GitHub Action wrapper
-- native workflow annotations enabled by default in the Action
-- issue templates
-- a pull request template
-- Codex-friendly `AGENTS.md` guidance
-  - this keeps the repository easy to adopt in real maintainer workflows
+```yaml
+name: Codex PR pre-review
+
+on:
+  pull_request:
+
+permissions:
+  contents: read
+
+jobs:
+  review:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 20
+      - uses: warren2008-2020-spec/codex-pr-reviewer@v0.2.0
+        with:
+          path: .
+          annotations: 'true'
+```
+
+The Action emits native annotations by default. The repository also includes issue templates, a pull request template, and Codex-friendly `AGENTS.md` guidance for maintainer workflows.
 
 ## Docs
 
