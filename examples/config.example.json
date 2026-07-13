@@ -1,4 +1,5 @@
 {
+  "$schema": "https://raw.githubusercontent.com/warren2008-2020-spec/codex-pr-reviewer/main/codex-pr-reviewer.schema.json",
   "thresholds": {
     "largeDiffFiles": 40,
     "highRiskScore": 88,

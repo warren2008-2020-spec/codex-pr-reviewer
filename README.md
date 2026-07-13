@@ -51,6 +51,7 @@ Repository-specific tuning:
 
 ```json
 {
+  "$schema": "https://raw.githubusercontent.com/warren2008-2020-spec/codex-pr-reviewer/main/codex-pr-reviewer.schema.json",
   "thresholds": {
     "largeDiffFiles": 40
   }
@@ -58,6 +59,7 @@ Repository-specific tuning:
 ```
 
 Place that in `.codex-pr-reviewer.json` at the repo root to adjust defaults per repository.
+The schema enables editor autocomplete, while the CLI rejects unknown keys, invalid ranges, and inconsistent risk thresholds with an actionable error.
 
 Example:
 

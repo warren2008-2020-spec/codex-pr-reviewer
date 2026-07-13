@@ -227,14 +227,58 @@ async function loadConfig(target) {
   try {
     const raw = await readFile(configPath, "utf8");
     const parsed = JSON.parse(raw);
+    validateConfig(parsed);
     return {
       thresholds: {
         ...defaultConfig.thresholds,
         ...(parsed.thresholds || {})
       }
     };
-  } catch {
-    return defaultConfig;
+  } catch (error) {
+    const detail = error instanceof Error ? error.message : String(error);
+    throw new Error(`Invalid .codex-pr-reviewer.json: ${detail}`);
+  }
+}
+
+function validateConfig(config) {
+  if (!config || typeof config !== "object" || Array.isArray(config)) {
+    throw new Error("configuration must be a JSON object");
+  }
+
+  const allowedRootKeys = new Set(["$schema", "thresholds"]);
+  const unknownRootKey = Object.keys(config).find((key) => !allowedRootKeys.has(key));
+  if (unknownRootKey) {
+    throw new Error(`unknown property: ${unknownRootKey}`);
+  }
+
+  if (config.thresholds === undefined) return;
+  if (!config.thresholds || typeof config.thresholds !== "object" || Array.isArray(config.thresholds)) {
+    throw new Error("thresholds must be a JSON object");
+  }
+
+  const rules = {
+    largeDiffFiles: { minimum: 1, maximum: Number.MAX_SAFE_INTEGER, integer: true },
+    highRiskScore: { minimum: 0, maximum: 100 },
+    mediumRiskScore: { minimum: 0, maximum: 100 }
+  };
+
+  for (const [key, value] of Object.entries(config.thresholds)) {
+    const rule = rules[key];
+    if (!rule) throw new Error(`unknown threshold: ${key}`);
+    if (typeof value !== "number" || !Number.isFinite(value)) {
+      throw new Error(`${key} must be a number`);
+    }
+    if (rule.integer && !Number.isInteger(value)) {
+      throw new Error(`${key} must be an integer`);
+    }
+    if (value < rule.minimum || value > rule.maximum) {
+      throw new Error(`${key} must be between ${rule.minimum} and ${rule.maximum}`);
+    }
+  }
+
+  const thresholds = { ...defaultConfig.thresholds, ...config.thresholds };
+  if (thresholds.highRiskScore <= thresholds.mediumRiskScore) {
+    throw new Error("highRiskScore must be greater than mediumRiskScore");
   }
 }
 

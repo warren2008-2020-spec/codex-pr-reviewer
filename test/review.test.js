@@ -87,6 +87,43 @@ test("repo config adjusts thresholds", async () => {
   assert.ok(parsed.signals.hasLargeDiff);
 });
 
+test("rejects invalid repository config with an actionable message", async () => {
+  const directory = await mkdtemp(path.join(tmpdir(), "cpr-invalid-config-"));
+  await writeFile(path.join(directory, ".codex-pr-reviewer.json"), JSON.stringify({
+    thresholds: {
+      largeDiffFiles: 0,
+      noisyOption: true
+    }
+  }));
+
+  await assert.rejects(
+    execFileAsync(process.execPath, ["./bin/codex-pr-reviewer.js", "review", directory], {
+      cwd: process.cwd()
+    }),
+    (error) => {
+      assert.match(error.stderr, /Invalid \.codex-pr-reviewer\.json/);
+      assert.match(error.stderr, /largeDiffFiles must be between 1/);
+      return true;
+    }
+  );
+});
+
+test("accepts schema metadata in repository config", async () => {
+  const directory = await mkdtemp(path.join(tmpdir(), "cpr-schema-config-"));
+  await writeFile(path.join(directory, ".codex-pr-reviewer.json"), JSON.stringify({
+    $schema: "https://raw.githubusercontent.com/warren2008-2020-spec/codex-pr-reviewer/main/codex-pr-reviewer.schema.json",
+    thresholds: {
+      largeDiffFiles: 5,
+      highRiskScore: 90,
+      mediumRiskScore: 65
+    }
+  }));
+  await writeFile(path.join(directory, "README.md"), "# fixture\n");
+
+  const report = await reviewJson(directory);
+  assert.equal(report.risk, "low");
+});
+
 for (const fixture of [
   "auth-without-tests",
   "dependency-update",
