@@ -5,6 +5,12 @@
 - detect lockfiles and dependency manifests more explicitly
 - surface changed file summaries in JSON output
 - add review note templates for common PR patterns
+- publish a JSON Schema for repository configuration
+- emit GitHub Actions annotations for high-risk findings
+
+## Completed
+
+- add realistic fixtures for authentication, dependency, migration, and rename-only pull requests
 
 ## Next
 

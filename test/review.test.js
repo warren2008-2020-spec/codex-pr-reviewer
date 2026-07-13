@@ -5,8 +5,23 @@ import { tmpdir } from "node:os";
 import path from "node:path";
 import { execFile } from "node:child_process";
 import { promisify } from "node:util";
+import { fileURLToPath } from "node:url";
 
 const execFileAsync = promisify(execFile);
+const fixturesDirectory = path.join(path.dirname(fileURLToPath(import.meta.url)), "fixtures");
+
+async function reviewJson(directory) {
+  let stdout = "";
+  try {
+    ({ stdout } = await execFileAsync(process.execPath, ["./bin/codex-pr-reviewer.js", "review", directory, "--json"], {
+      cwd: process.cwd()
+    }));
+  } catch (error) {
+    stdout = error.stdout;
+  }
+
+  return JSON.parse(stdout);
+}
 
 test("emits findings for large doc-heavy changes", async () => {
   const directory = await mkdtemp(path.join(tmpdir(), "cpr-docs-"));
@@ -71,3 +86,21 @@ test("repo config adjusts thresholds", async () => {
   const parsed = JSON.parse(stdout);
   assert.ok(parsed.signals.hasLargeDiff);
 });
+
+for (const fixture of [
+  "auth-without-tests",
+  "dependency-update",
+  "database-migration",
+  "rename-only"
+]) {
+  test(`matches the expected risk for ${fixture}`, async () => {
+    const directory = path.join(fixturesDirectory, fixture);
+    const expected = JSON.parse(await import("node:fs/promises").then(({ readFile }) =>
+      readFile(path.join(directory, "expected.json"), "utf8")
+    ));
+    const report = await reviewJson(directory);
+
+    assert.equal(report.risk, expected.risk);
+    assert.deepEqual(report.summary.reasons, expected.reasons);
+  });
+}

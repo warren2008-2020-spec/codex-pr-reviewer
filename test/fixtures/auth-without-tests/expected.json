@@ -1,0 +1,7 @@
+{
+  "risk": "high",
+  "reasons": [
+    "behavior change without tests",
+    "security-sensitive code"
+  ]
+}

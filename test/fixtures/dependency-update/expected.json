@@ -1,0 +1,6 @@
+{
+  "risk": "medium",
+  "reasons": [
+    "dependency or lockfile change"
+  ]
+}

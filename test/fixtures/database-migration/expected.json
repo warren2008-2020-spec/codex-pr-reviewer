@@ -1,0 +1,7 @@
+{
+  "risk": "high",
+  "reasons": [
+    "behavior change without tests",
+    "migration or schema change"
+  ]
+}
