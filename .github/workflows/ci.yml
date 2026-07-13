@@ -4,6 +4,9 @@ on:
   push:
   pull_request:
 
+permissions:
+  contents: read
+
 jobs:
   test:
     runs-on: ubuntu-latest
@@ -13,3 +16,16 @@ jobs:
         with:
           node-version: 20
       - run: npm test
+
+  action-smoke:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 20
+      - name: Run the local composite Action
+        uses: ./
+        with:
+          path: test/fixtures/neutral
+          annotations: 'true'

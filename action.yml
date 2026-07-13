@@ -1,5 +1,8 @@
 name: codex-pr-reviewer
 description: Pre-review pull requests with a lightweight maintainer-focused CLI
+branding:
+  icon: shield
+  color: blue
 runs:
   using: composite
   steps:

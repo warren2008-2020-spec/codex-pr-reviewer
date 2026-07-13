@@ -1,5 +1,7 @@
 # codex-pr-reviewer
 
+[![CI](https://github.com/warren2008-2020-spec/codex-pr-reviewer/actions/workflows/ci.yml/badge.svg)](https://github.com/warren2008-2020-spec/codex-pr-reviewer/actions/workflows/ci.yml)
+
 `codex-pr-reviewer` is a small CLI for maintainers who want a fast, opinionated PR pre-review before merge.
 
 It focuses on blast radius, not raw diff size. The default output is a short score plus a few concrete reasons a PR deserves a deeper human pass.
