@@ -1,7 +1,7 @@
 {
   "name": "codex-pr-reviewer",
-  "version": "0.1.0",
-  "description": "A small CLI that helps maintainers pre-review pull requests for Codex-assisted workflows.",
+  "version": "0.2.0",
+  "description": "A blast-radius focused PR pre-review CLI for open-source maintainers.",
   "type": "module",
   "bin": {
     "codex-pr-reviewer": "./bin/codex-pr-reviewer.js"
