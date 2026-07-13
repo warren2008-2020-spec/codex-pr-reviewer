@@ -47,6 +47,14 @@ JSON output:
 node ./bin/codex-pr-reviewer.js review . --json
 ```
 
+GitHub Actions annotations:
+
+```bash
+node ./bin/codex-pr-reviewer.js review . --annotations
+```
+
+High-risk findings become `error` annotations, medium-risk findings become `warning`, and low-risk findings become `notice`. When a signal maps to a changed file, the annotation includes its relative path.
+
 Repository-specific tuning:
 
 ```json
@@ -74,6 +82,7 @@ See [examples/config.example.json](./examples/config.example.json) for a ready-t
 The repository is designed to support maintainer workflows with:
 
 - a composite GitHub Action wrapper
+- native workflow annotations enabled by default in the Action
 - issue templates
 - a pull request template
 - Codex-friendly `AGENTS.md` guidance

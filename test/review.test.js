@@ -124,6 +124,21 @@ test("accepts schema metadata in repository config", async () => {
   assert.equal(report.risk, "low");
 });
 
+test("emits GitHub Actions annotations with matching file paths", async () => {
+  const directory = path.join(fixturesDirectory, "auth-without-tests");
+
+  await assert.rejects(
+    execFileAsync(process.execPath, ["./bin/codex-pr-reviewer.js", "review", directory, "--annotations"], {
+      cwd: process.cwd()
+    }),
+    (error) => {
+      assert.match(error.stdout, /::error file=src\/auth\/session\.fixture,title=Behavior change without tests::/);
+      assert.match(error.stdout, /::error file=src\/auth\/session\.fixture,title=Auth, security, or permission code changed::/);
+      return true;
+    }
+  );
+});
+
 for (const fixture of [
   "auth-without-tests",
   "dependency-update",

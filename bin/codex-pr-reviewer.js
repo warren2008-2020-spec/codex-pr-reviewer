@@ -38,6 +38,7 @@ async function main() {
 async function runReview(args = []) {
   const target = resolveTarget(args);
   const json = args.includes("--json");
+  const annotations = args.includes("--annotations");
   const config = await loadConfig(target);
   const report = await reviewPullRequest(target, config);
 
@@ -47,6 +48,12 @@ async function runReview(args = []) {
       process.exitCode = 1;
     }
     return;
+  }
+
+  if (annotations) {
+    for (const finding of report.findings) {
+      console.log(formatAnnotation(finding));
+    }
   }
 
   console.log(`Codex PR review score: ${report.score}/100`);
@@ -72,7 +79,7 @@ function runHelp() {
   console.log(`codex-pr-reviewer
 
 Usage:
-  codex-pr-reviewer review [path] [--json]
+  codex-pr-reviewer review [path] [--json] [--annotations]
 
 Commands:
   review   Score a pull request diff or repository for review risk.
@@ -97,7 +104,8 @@ async function reviewPullRequest(target, config = defaultConfig) {
     findings.push({
       severity: "high",
       title: "Behavior change without tests",
-      detail: "This is the strongest default signal because it expands blast radius without matching verification."
+      detail: "This is the strongest default signal because it expands blast radius without matching verification.",
+      files: matchFiles(summary.files, /src|lib|app|index|server|controller|service|route|handler|api/i)
     });
     reasons.push("behavior change without tests");
   }
@@ -106,7 +114,8 @@ async function reviewPullRequest(target, config = defaultConfig) {
     findings.push({
       severity: "high",
       title: "Dependency or lockfile change",
-      detail: "Dependency and lockfile updates deserve closer review because they often alter runtime behavior or supply-chain risk."
+      detail: "Dependency and lockfile updates deserve closer review because they often alter runtime behavior or supply-chain risk.",
+      files: matchFiles(summary.files, /package\.json|package-lock\.json|pnpm-lock\.yaml|yarn\.lock|requirements\.txt|poetry\.lock|pyproject\.toml|Cargo\.toml|go\.mod|go\.sum/i)
     });
     reasons.push("dependency or lockfile change");
   }
@@ -115,7 +124,8 @@ async function reviewPullRequest(target, config = defaultConfig) {
     findings.push({
       severity: "high",
       title: "Auth, security, or permission code changed",
-      detail: "Security-sensitive code should always receive a deeper human pass."
+      detail: "Security-sensitive code should always receive a deeper human pass.",
+      files: matchFiles(summary.files, /auth|security|permission|acl|role|rbac|oauth|token|secret|sso/i)
     });
     reasons.push("security-sensitive code");
   }
@@ -124,7 +134,8 @@ async function reviewPullRequest(target, config = defaultConfig) {
     findings.push({
       severity: "high",
       title: "Database migration or schema change",
-      detail: "Schema changes can be hard to roll back and often need explicit validation."
+      detail: "Schema changes can be hard to roll back and often need explicit validation.",
+      files: matchFiles(summary.files, /migration|schema|ddl|db\/migrate|prisma|typeorm|sequelize|knex/i)
     });
     reasons.push("migration or schema change");
   }
@@ -133,7 +144,8 @@ async function reviewPullRequest(target, config = defaultConfig) {
     findings.push({
       severity: "medium",
       title: "Public API or config change",
-      detail: "Public-facing interfaces should be reviewed for compatibility and downstream impact."
+      detail: "Public-facing interfaces should be reviewed for compatibility and downstream impact.",
+      files: matchFiles(summary.files, /api|public|config|settings|openapi|swagger|schema/i)
     });
     reasons.push("public API or config change");
   }
@@ -142,7 +154,8 @@ async function reviewPullRequest(target, config = defaultConfig) {
     findings.push({
       severity: "medium",
       title: "CI or deployment change",
-      detail: "Changes to CI or deployment behavior can affect how safely the project ships."
+      detail: "Changes to CI or deployment behavior can affect how safely the project ships.",
+      files: matchFiles(summary.files, /ci|workflow|deploy|release|action|build/i)
     });
     reasons.push("CI or deployment change");
   }
@@ -151,7 +164,8 @@ async function reviewPullRequest(target, config = defaultConfig) {
     findings.push({
       severity: "low",
       title: "Large diff surface",
-      detail: "Large diffs raise risk, but they are not a problem by themselves."
+      detail: "Large diffs raise risk, but they are not a problem by themselves.",
+      files: []
     });
     reasons.push("large diff");
   }
@@ -160,7 +174,8 @@ async function reviewPullRequest(target, config = defaultConfig) {
     findings.push({
       severity: "low",
       title: "Rename-heavy change",
-      detail: "Rename-only changes are usually discounted after similarity detection unless other signals are present."
+      detail: "Rename-only changes are usually discounted after similarity detection unless other signals are present.",
+      files: matchFiles(summary.files, /rename|moved/i)
     });
     reasons.push("rename-heavy change");
   }
@@ -169,7 +184,8 @@ async function reviewPullRequest(target, config = defaultConfig) {
     findings.push({
       severity: "low",
       title: "Docs-only change",
-      detail: "Docs changes are low risk, but links and examples should still be checked."
+      detail: "Docs changes are low risk, but links and examples should still be checked.",
+      files: summary.files
     });
     reasons.push("docs-only change");
   }
@@ -203,6 +219,7 @@ async function summarizeTarget(target, config = defaultConfig) {
   };
 
   return {
+    files,
     fileCount: files.length,
     hasLargeDiff: files.length >= thresholds.largeDiffFiles,
     hasBehaviorChanges: /src|lib|app|index|server|controller|service|route|handler|api/i.test(joined),
@@ -216,6 +233,21 @@ async function summarizeTarget(target, config = defaultConfig) {
     touchesPublicApiOrConfig: /api|public|config|settings|openapi|swagger|schema/i.test(joined),
     touchesDeploymentSurface: /ci|workflow|deploy|release|action|build/i.test(joined)
   };
+}
+
+function matchFiles(files, pattern) {
+  return files.filter((file) => pattern.test(file));
+}
+
+function formatAnnotation(finding) {
+  const level = finding.severity === "high" ? "error" : finding.severity === "medium" ? "warning" : "notice";
+  const properties = [`title=${escapeWorkflowValue(finding.title)}`];
+  if (finding.files[0]) properties.unshift(`file=${escapeWorkflowValue(finding.files[0].replaceAll("\\", "/"))}`);
+  return `::${level} ${properties.join(",")}::${escapeWorkflowValue(finding.detail)}`;
+}
+
+function escapeWorkflowValue(value) {
+  return String(value).replaceAll("%", "%25").replaceAll("\r", "%0D").replaceAll("\n", "%0A");
 }
 
 async function loadConfig(target) {
