@@ -100,7 +100,7 @@ jobs:
       - uses: actions/setup-node@v4
         with:
           node-version: 20
-      - uses: warren2008-2020-spec/codex-pr-reviewer@v0.2.0
+      - uses: warren2008-2020-spec/codex-pr-reviewer@v0.2.1
         with:
           path: .
           annotations: 'true'

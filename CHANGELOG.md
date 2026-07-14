@@ -1,5 +1,9 @@
 # Changelog
 
+## 0.2.1 - 2026-07-14
+
+- fix the composite GitHub Action so it resolves the CLI from the Action's own directory when installed from another repository
+
 ## 0.2.0 - 2026-07-13
 
 - prioritize behavior changes without tests and other blast-radius signals
