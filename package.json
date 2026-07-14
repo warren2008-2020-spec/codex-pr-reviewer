@@ -4,7 +4,7 @@
   "description": "A blast-radius focused PR pre-review CLI for open-source maintainers.",
   "type": "module",
   "bin": {
-    "codex-pr-reviewer": "./bin/codex-pr-reviewer.js"
+    "codex-pr-reviewer": "bin/codex-pr-reviewer.js"
   },
   "scripts": {
     "review": "node ./bin/codex-pr-reviewer.js review",

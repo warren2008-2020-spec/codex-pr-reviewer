@@ -32,27 +32,42 @@ Summary: dependency or lockfile change
 
 ## Usage
 
+Run it without cloning the repository:
+
 ```bash
-npm install
-node ./bin/codex-pr-reviewer.js review .
+npx --yes codex-pr-reviewer@0.2.1 review .
+```
+
+Or install the CLI globally:
+
+```bash
+npm install --global codex-pr-reviewer@0.2.1
+codex-pr-reviewer review .
 ```
 
 To review a specific folder or PR checkout:
 
 ```bash
-node ./bin/codex-pr-reviewer.js review ./path/to/change
+npx --yes codex-pr-reviewer@0.2.1 review ./path/to/change
+```
+
+For local development from a clone:
+
+```bash
+npm install
+node ./bin/codex-pr-reviewer.js review .
 ```
 
 JSON output:
 
 ```bash
-node ./bin/codex-pr-reviewer.js review . --json
+npx --yes codex-pr-reviewer@0.2.1 review . --json
 ```
 
 GitHub Actions annotations:
 
 ```bash
-node ./bin/codex-pr-reviewer.js review . --annotations
+npx --yes codex-pr-reviewer@0.2.1 review . --annotations
 ```
 
 High-risk findings become `error` annotations, medium-risk findings become `warning`, and low-risk findings become `notice`. When a signal maps to a changed file, the annotation includes its relative path.
