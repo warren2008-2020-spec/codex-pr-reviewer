@@ -7,7 +7,7 @@ runs:
   using: composite
   steps:
     - shell: bash
-      run: node ./bin/codex-pr-reviewer.js review "${{ inputs.path }}" ${{ inputs.json == 'true' && '--json' || '' }} ${{ inputs.annotations == 'true' && '--annotations' || '' }}
+      run: node "${{ github.action_path }}/bin/codex-pr-reviewer.js" review "${{ inputs.path }}" ${{ inputs.json == 'true' && '--json' || '' }} ${{ inputs.annotations == 'true' && '--annotations' || '' }}
 inputs:
   path:
     description: Repository path to review

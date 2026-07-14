@@ -1,6 +1,6 @@
 import test from "node:test";
 import assert from "node:assert/strict";
-import { mkdtemp, writeFile } from "node:fs/promises";
+import { mkdtemp, readFile, writeFile } from "node:fs/promises";
 import { tmpdir } from "node:os";
 import path from "node:path";
 import { execFile } from "node:child_process";
@@ -137,6 +137,14 @@ test("emits GitHub Actions annotations with matching file paths", async () => {
       return true;
     }
   );
+});
+
+test("composite Action resolves the CLI from its own action path", async () => {
+  const actionPath = path.join(process.cwd(), "action.yml");
+  const action = await readFile(actionPath, "utf8");
+
+  assert.match(action, /github\.action_path/);
+  assert.match(action, /codex-pr-reviewer\.js/);
 });
 
 for (const fixture of [
