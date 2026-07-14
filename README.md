@@ -115,13 +115,13 @@ jobs:
       - uses: actions/setup-node@v4
         with:
           node-version: 20
-      - uses: warren2008-2020-spec/codex-pr-reviewer@v0.2.1
+      - uses: warren2008-2020-spec/codex-pr-reviewer@v0
         with:
           path: .
           annotations: 'true'
 ```
 
-The Action emits native annotations by default. The repository also includes issue templates, a pull request template, and Codex-friendly `AGENTS.md` guidance for maintainer workflows.
+The `v0` tag tracks compatible updates. Pin `v0.2.1` when a workflow needs an exact release. The Action emits native annotations by default. The repository also includes issue templates, a pull request template, and Codex-friendly `AGENTS.md` guidance for maintainer workflows.
 
 ## Docs
 
