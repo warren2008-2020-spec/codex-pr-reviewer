@@ -1,5 +1,11 @@
 # Changelog
 
+## 0.2.2 - 2026-07-15
+
+- distinguish dependency manifest changes from lockfile-only changes
+- keep lockfile-only changes visible as a dedicated supply-chain review signal
+- add a lockfile-only regression fixture
+
 ## 0.2.1 - 2026-07-14
 
 - fix the composite GitHub Action so it resolves the CLI from the Action's own directory when installed from another repository

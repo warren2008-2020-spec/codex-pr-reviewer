@@ -13,7 +13,8 @@ Maintainers need a fast way to decide which pull requests deserve a deeper human
 ## What it checks
 
 - large diffs
-- package or dependency changes
+- dependency manifest changes
+- lockfile-only changes
 - missing tests
 - rename-heavy changes
 - docs-only changes

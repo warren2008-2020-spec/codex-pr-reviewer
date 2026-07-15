@@ -1,6 +1,6 @@
 {
   "risk": "medium",
   "reasons": [
-    "dependency manifest change"
+    "lockfile-only change"
   ]
 }

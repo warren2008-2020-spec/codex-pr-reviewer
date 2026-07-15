@@ -6,6 +6,8 @@ import { fileURLToPath, pathToFileURL } from "node:url";
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
 const root = path.resolve(__dirname, "..");
+const dependencyManifestPattern = /package\.json|requirements\.txt|pyproject\.toml|Cargo\.toml|go\.mod/i;
+const lockfilePattern = /package-lock\.json|pnpm-lock\.yaml|yarn\.lock|poetry\.lock|Cargo\.lock|go\.sum/i;
 const defaultConfig = {
   thresholds: {
     largeDiffFiles: 25,
@@ -110,14 +112,22 @@ async function reviewPullRequest(target, config = defaultConfig) {
     reasons.push("behavior change without tests");
   }
 
-  if (summary.touchesDependencyFiles) {
+  if (summary.touchesDependencyManifest) {
     findings.push({
       severity: "high",
-      title: "Dependency or lockfile change",
-      detail: "Dependency and lockfile updates deserve closer review because they often alter runtime behavior or supply-chain risk.",
-      files: matchFiles(summary.files, /package\.json|package-lock\.json|pnpm-lock\.yaml|yarn\.lock|requirements\.txt|poetry\.lock|pyproject\.toml|Cargo\.toml|go\.mod|go\.sum/i)
+      title: "Dependency manifest change",
+      detail: "Dependency manifest changes can alter runtime behavior or supply-chain risk and deserve a deeper review.",
+      files: matchFiles(summary.files, dependencyManifestPattern)
     });
-    reasons.push("dependency or lockfile change");
+    reasons.push("dependency manifest change");
+  } else if (summary.touchesLockfile) {
+    findings.push({
+      severity: "high",
+      title: "Lockfile-only change",
+      detail: "A lockfile-only update can change resolved supply-chain artifacts; verify why the resolved versions changed.",
+      files: matchFiles(summary.files, lockfilePattern)
+    });
+    reasons.push("lockfile-only change");
   }
 
   if (summary.touchesSecuritySurface) {
@@ -213,6 +223,8 @@ async function reviewPullRequest(target, config = defaultConfig) {
 async function summarizeTarget(target, config = defaultConfig) {
   const files = await listFiles(target);
   const joined = files.join("\n");
+  const touchesDependencyManifest = dependencyManifestPattern.test(joined);
+  const touchesLockfile = lockfilePattern.test(joined);
   const thresholds = {
     ...defaultConfig.thresholds,
     ...(config.thresholds || {})
@@ -223,7 +235,9 @@ async function summarizeTarget(target, config = defaultConfig) {
     fileCount: files.length,
     hasLargeDiff: files.length >= thresholds.largeDiffFiles,
     hasBehaviorChanges: /src|lib|app|index|server|controller|service|route|handler|api/i.test(joined),
-    touchesDependencyFiles: /package\.json|package-lock\.json|pnpm-lock\.yaml|yarn\.lock|requirements\.txt|poetry\.lock|pyproject\.toml|Cargo\.toml|go\.mod|go\.sum/i.test(joined),
+    touchesDependencyFiles: touchesDependencyManifest || touchesLockfile,
+    touchesDependencyManifest,
+    touchesLockfile,
     hasTests: /test|tests|__tests__|spec/.test(joined),
     touchesDocsOnly: files.length > 0 && files.every((file) => /\.(md|txt|adoc|rst|yml|yaml)$/.test(file)),
     hasRenames: /rename|moved/i.test(joined),

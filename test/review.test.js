@@ -150,6 +150,7 @@ test("composite Action resolves the CLI from its own action path", async () => {
 for (const fixture of [
   "auth-without-tests",
   "dependency-update",
+  "lockfile-only",
   "database-migration",
   "rename-only"
 ]) {
