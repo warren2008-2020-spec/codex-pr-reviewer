@@ -163,6 +163,23 @@ test("emits GitHub Actions annotations with matching file paths", async () => {
   );
 });
 
+test("can report low-severity findings without blocking when configured", async () => {
+  const directory = await mkdtemp(path.join(tmpdir(), "cpr-report-only-"));
+  await writeFile(path.join(directory, "README.md"), "# docs\n");
+
+  await assert.doesNotReject(
+    execFileAsync(process.execPath, ["./bin/codex-pr-reviewer.js", "review", directory, "--fail-on", "never"], {
+      cwd: process.cwd()
+    })
+  );
+
+  await assert.doesNotReject(
+    execFileAsync(process.execPath, ["./bin/codex-pr-reviewer.js", "review", directory, "--fail-on", "high"], {
+      cwd: process.cwd()
+    })
+  );
+});
+
 test("composite Action resolves the CLI from its own action path", async () => {
   const actionPath = path.join(process.cwd(), "action.yml");
   const action = await readFile(actionPath, "utf8");

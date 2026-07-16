@@ -7,7 +7,7 @@ runs:
   using: composite
   steps:
     - shell: bash
-      run: node "${{ github.action_path }}/bin/codex-pr-reviewer.js" review "${{ inputs.path }}" ${{ inputs.json == 'true' && '--json' || '' }} ${{ inputs.annotations == 'true' && '--annotations' || '' }}
+      run: node "${{ github.action_path }}/bin/codex-pr-reviewer.js" review "${{ inputs.path }}" ${{ inputs.base != '' && format('--base {0}', inputs.base) || '' }} --fail-on "${{ inputs.fail-on }}" ${{ inputs.json == 'true' && '--json' || '' }} ${{ inputs.annotations == 'true' && '--annotations' || '' }}
 inputs:
   path:
     description: Repository path to review
@@ -21,3 +21,11 @@ inputs:
     description: Emit native GitHub Actions annotations
     required: false
     default: 'true'
+  base:
+    description: Git ref or SHA to compare against before review
+    required: false
+    default: ''
+  fail-on:
+    description: Lowest finding severity that fails the step (high, medium, low, or never)
+    required: false
+    default: 'low'

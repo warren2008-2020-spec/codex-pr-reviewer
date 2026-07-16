@@ -45,12 +45,13 @@ async function runReview(args = []) {
   const json = args.includes("--json");
   const annotations = args.includes("--annotations");
   const base = optionValue(args, "--base");
+  const failOn = parseFailOn(optionValue(args, "--fail-on"));
   const config = await loadConfig(target);
   const report = await reviewPullRequest(target, config, { base });
 
   if (json) {
     console.log(JSON.stringify(report, null, 2));
-    if (report.findings.length > 0) {
+    if (shouldFail(report.findings, failOn)) {
       process.exitCode = 1;
     }
     return;
@@ -78,7 +79,9 @@ async function runReview(args = []) {
     console.log(`  ${finding.detail}`);
   }
 
-  process.exitCode = 1;
+  if (shouldFail(report.findings, failOn)) {
+    process.exitCode = 1;
+  }
 }
 
 function runHelp() {
@@ -93,7 +96,7 @@ Commands:
 }
 
 function resolveTarget(args) {
-  const optionValues = new Set(["--base"]);
+  const optionValues = new Set(["--base", "--fail-on"]);
   const targetArg = args.find((arg, index) => !arg.startsWith("-") && !optionValues.has(args[index - 1]));
   return path.resolve(process.cwd(), targetArg ?? ".");
 }
@@ -101,6 +104,19 @@ function resolveTarget(args) {
 function optionValue(args, option) {
   const index = args.indexOf(option);
   return index >= 0 ? args[index + 1] : undefined;
+}
+
+function parseFailOn(value) {
+  const failOn = value ?? "low";
+  if (!new Set(["high", "medium", "low", "never"]).has(failOn)) {
+    throw new Error("--fail-on must be one of: high, medium, low, never");
+  }
+  return failOn;
+}
+
+function shouldFail(findings, failOn) {
+  const severityRank = { low: 1, medium: 2, high: 3, never: Infinity };
+  return findings.some((finding) => severityRank[finding.severity] >= severityRank[failOn]);
 }
 
 async function reviewPullRequest(target, config = defaultConfig, options = {}) {
