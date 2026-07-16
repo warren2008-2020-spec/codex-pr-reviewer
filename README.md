@@ -6,6 +6,19 @@
 
 It focuses on blast radius, not raw diff size. The default output is a short score plus a few concrete reasons a PR deserves a deeper human pass.
 
+## Project family
+
+This repository is the main public entry point.
+
+- [`codex-pr-reviewer`](https://github.com/warren2008-2020-spec/codex-pr-reviewer): main product, PR pre-review and risk scoring
+- [`codex-doctor`](https://github.com/warren2008-2020-spec/codex-doctor): environment and setup checks for Codex workflows
+- [`codex-maintainer-kit`](https://github.com/warren2008-2020-spec/codex-maintainer-kit): helper utilities for repo preparation
+- [`codex-meeting-to-deck-skill`](https://github.com/warren2008-2020-spec/codex-meeting-to-deck-skill): narrow skill for turning notes into presentation decks
+- [`codex-office-skills`](https://github.com/warren2008-2020-spec/codex-office-skills): office-oriented experiments and demos
+- [`codex-wincheck`](https://github.com/warren2008-2020-spec/codex-wincheck): Windows smoke-check companion repo
+
+The smaller repos stay published, but they are support surfaces rather than the main story.
+
 ## Why this matters
 
 Maintainers need a fast way to decide which pull requests deserve a deeper human pass before merge. This project turns that decision into a short score, a short summary, and a few concrete notes.
