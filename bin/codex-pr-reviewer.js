@@ -1,13 +1,16 @@
 #!/usr/bin/env node
 import { readFile, readdir, stat, writeFile, mkdir } from "node:fs/promises";
 import { existsSync } from "node:fs";
+import { execFile } from "node:child_process";
 import path from "node:path";
 import { fileURLToPath, pathToFileURL } from "node:url";
+import { promisify } from "node:util";
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
 const root = path.resolve(__dirname, "..");
 const dependencyManifestPattern = /package\.json|requirements\.txt|pyproject\.toml|Cargo\.toml|go\.mod/i;
 const lockfilePattern = /package-lock\.json|pnpm-lock\.yaml|yarn\.lock|poetry\.lock|Cargo\.lock|go\.sum/i;
+const execFileAsync = promisify(execFile);
 const defaultConfig = {
   thresholds: {
     largeDiffFiles: 25,
@@ -41,8 +44,9 @@ async function runReview(args = []) {
   const target = resolveTarget(args);
   const json = args.includes("--json");
   const annotations = args.includes("--annotations");
+  const base = optionValue(args, "--base");
   const config = await loadConfig(target);
-  const report = await reviewPullRequest(target, config);
+  const report = await reviewPullRequest(target, config, { base });
 
   if (json) {
     console.log(JSON.stringify(report, null, 2));
@@ -89,12 +93,18 @@ Commands:
 }
 
 function resolveTarget(args) {
-  const targetArg = args.find((arg) => !arg.startsWith("-"));
+  const optionValues = new Set(["--base"]);
+  const targetArg = args.find((arg, index) => !arg.startsWith("-") && !optionValues.has(args[index - 1]));
   return path.resolve(process.cwd(), targetArg ?? ".");
 }
 
-async function reviewPullRequest(target, config = defaultConfig) {
-  const summary = await summarizeTarget(target, config);
+function optionValue(args, option) {
+  const index = args.indexOf(option);
+  return index >= 0 ? args[index + 1] : undefined;
+}
+
+async function reviewPullRequest(target, config = defaultConfig, options = {}) {
+  const summary = await summarizeTarget(target, config, options);
   const findings = [];
   const reasons = [];
   const thresholds = {
@@ -220,8 +230,9 @@ async function reviewPullRequest(target, config = defaultConfig) {
   };
 }
 
-async function summarizeTarget(target, config = defaultConfig) {
-  const files = await listFiles(target);
+async function summarizeTarget(target, config = defaultConfig, options = {}) {
+  const changedFiles = options.base ? await listChangedFiles(target, options.base) : null;
+  const files = changedFiles ?? await listFiles(target);
   const joined = files.join("\n");
   const touchesDependencyManifest = dependencyManifestPattern.test(joined);
   const touchesLockfile = lockfilePattern.test(joined);
@@ -232,6 +243,7 @@ async function summarizeTarget(target, config = defaultConfig) {
 
   return {
     files,
+    analysisMode: changedFiles ? "git-diff" : "repository-scan",
     fileCount: files.length,
     hasLargeDiff: files.length >= thresholds.largeDiffFiles,
     hasBehaviorChanges: /src|lib|app|index|server|controller|service|route|handler|api/i.test(joined),
@@ -247,6 +259,17 @@ async function summarizeTarget(target, config = defaultConfig) {
     touchesPublicApiOrConfig: /api|public|config|settings|openapi|swagger|schema/i.test(joined),
     touchesDeploymentSurface: /ci|workflow|deploy|release|action|build/i.test(joined)
   };
+}
+
+async function listChangedFiles(directory, base) {
+  try {
+    const { stdout } = await execFileAsync("git", ["diff", "--name-only", "--diff-filter=ACMR", `${base}...HEAD`], {
+      cwd: directory
+    });
+    return stdout.split(/\r?\n/).filter(Boolean);
+  } catch {
+    return null;
+  }
 }
 
 function matchFiles(files, pattern) {

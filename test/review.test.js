@@ -10,10 +10,10 @@ import { fileURLToPath } from "node:url";
 const execFileAsync = promisify(execFile);
 const fixturesDirectory = path.join(path.dirname(fileURLToPath(import.meta.url)), "fixtures");
 
-async function reviewJson(directory) {
+async function reviewJson(directory, extraArgs = []) {
   let stdout = "";
   try {
-    ({ stdout } = await execFileAsync(process.execPath, ["./bin/codex-pr-reviewer.js", "review", directory, "--json"], {
+    ({ stdout } = await execFileAsync(process.execPath, ["./bin/codex-pr-reviewer.js", "review", directory, "--json", ...extraArgs], {
       cwd: process.cwd()
     }));
   } catch (error) {
@@ -22,6 +22,30 @@ async function reviewJson(directory) {
 
   return JSON.parse(stdout);
 }
+
+async function git(directory, ...args) {
+  return execFileAsync("git", args, { cwd: directory });
+}
+
+test("analyzes only files changed since an explicit Git base", async () => {
+  const directory = await mkdtemp(path.join(tmpdir(), "cpr-base-"));
+  await git(directory, "init");
+  await git(directory, "config", "user.email", "test@example.com");
+  await git(directory, "config", "user.name", "Test User");
+  await writeFile(path.join(directory, "README.md"), "# initial\n");
+  await writeFile(path.join(directory, "auth.js"), "export const login = () => true;\n");
+  await git(directory, "add", ".");
+  await git(directory, "commit", "-m", "base");
+  const { stdout: baseStdout } = await git(directory, "rev-parse", "HEAD");
+  const base = baseStdout.trim();
+
+  await writeFile(path.join(directory, "README.md"), "# updated\n");
+  await git(directory, "add", "README.md");
+  await git(directory, "commit", "-m", "docs");
+
+  const report = await reviewJson(directory, ["--base", base]);
+  assert.deepEqual(report.signals.files, ["README.md"]);
+});
 
 test("emits findings for large doc-heavy changes", async () => {
   const directory = await mkdtemp(path.join(tmpdir(), "cpr-docs-"));
