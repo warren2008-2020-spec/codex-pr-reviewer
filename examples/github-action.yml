@@ -1,0 +1,22 @@
+name: Codex PR pre-review
+
+on:
+  pull_request:
+    types: [opened, synchronize, reopened]
+
+permissions:
+  contents: read
+
+jobs:
+  review:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 20
+      - name: Pre-review pull request risk
+        uses: warren2008-2020-spec/codex-pr-reviewer@v0
+        with:
+          path: .
+          annotations: 'true'

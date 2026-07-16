@@ -97,7 +97,7 @@ See [examples/config.example.json](./examples/config.example.json) for a ready-t
 
 ## GitHub integration
 
-Add this workflow to `.github/workflows/codex-pr-review.yml`:
+Copy [`examples/github-action.yml`](./examples/github-action.yml) to `.github/workflows/codex-pr-review.yml`, or start with this workflow:
 
 ```yaml
 name: Codex PR pre-review
