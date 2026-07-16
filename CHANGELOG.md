@@ -1,5 +1,13 @@
 # Changelog
 
+## 0.3.0 - 2026-07-16
+
+- add `--base` to review only files changed since a Git ref or SHA
+- add `--fail-on` so teams can report lower-risk findings without blocking merges
+- ignore common generated and dependency directories during repository scans
+- add `paths.ignoreDirectories` for repository-specific generated folders
+- flag changed tests that do not clearly map to changed behavior files
+
 ## 0.2.2 - 2026-07-15
 
 - distinguish dependency manifest changes from lockfile-only changes

@@ -13,9 +13,11 @@ Maintainers need a fast way to decide which pull requests deserve a deeper human
 ## What it checks
 
 - large diffs
+- files changed since a Git base ref
 - dependency manifest changes
 - lockfile-only changes
-- missing tests
+- behavior changes without tests
+- test changes that may not match changed behavior
 - rename-heavy changes
 - docs-only changes
 
@@ -73,6 +75,21 @@ npx --yes codex-pr-reviewer@v0 review . --annotations
 
 High-risk findings become `error` annotations, medium-risk findings become `warning`, and low-risk findings become `notice`. When a signal maps to a changed file, the annotation includes its relative path.
 
+Review only files changed since a Git base ref:
+
+```bash
+npx --yes codex-pr-reviewer@v0 review . --base origin/main
+```
+
+Control whether findings block the command:
+
+```bash
+npx --yes codex-pr-reviewer@v0 review . --fail-on high
+npx --yes codex-pr-reviewer@v0 review . --fail-on never
+```
+
+`--fail-on` accepts `high`, `medium`, `low`, or `never`. The CLI default is `low` for strict local checks. In shared CI, `high` is often a better first setting because low and medium findings still appear in the report without blocking every pull request.
+
 Repository-specific tuning:
 
 ```json
@@ -80,6 +97,9 @@ Repository-specific tuning:
   "$schema": "https://raw.githubusercontent.com/warren2008-2020-spec/codex-pr-reviewer/main/codex-pr-reviewer.schema.json",
   "thresholds": {
     "largeDiffFiles": 40
+  },
+  "paths": {
+    "ignoreDirectories": ["generated-output"]
   }
 }
 ```
@@ -91,6 +111,7 @@ Example:
 
 - set `largeDiffFiles` lower for small libraries
 - set it higher for generated or documentation-heavy repos
+- add generated folders to `paths.ignoreDirectories`
 - keep the defaults strict for security-sensitive projects
 
 See [examples/config.example.json](./examples/config.example.json) for a ready-to-copy starting point.
@@ -113,16 +134,23 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
       - uses: actions/setup-node@v4
         with:
           node-version: 20
-      - uses: warren2008-2020-spec/codex-pr-reviewer@v0
+      - name: Pre-review pull request risk
+        uses: warren2008-2020-spec/codex-pr-reviewer@v0
         with:
           path: .
+          base: ${{ github.event.pull_request.base.sha }}
+          fail-on: high
           annotations: 'true'
 ```
 
-The `v0` tag tracks compatible updates. Pin `v0.2.2` when a workflow needs an exact release. The Action emits native annotations by default. The repository also includes issue templates, a pull request template, and Codex-friendly `AGENTS.md` guidance for maintainer workflows.
+The `v0` tag tracks compatible updates. Pin `v0.3.0` when a workflow needs an exact release. The Action emits native annotations by default. The repository also includes issue templates, a pull request template, and Codex-friendly `AGENTS.md` guidance for maintainer workflows.
+
+The Action is intentionally thin: the CLI does the analysis, while the workflow controls checkout depth, base comparison, annotations, and merge-blocking policy.
 
 ## Docs
 

@@ -4,5 +4,8 @@
     "largeDiffFiles": 40,
     "highRiskScore": 88,
     "mediumRiskScore": 68
+  },
+  "paths": {
+    "ignoreDirectories": ["generated-output"]
   }
 }

@@ -27,6 +27,20 @@
           "maximum": 100
         }
       }
+    },
+    "paths": {
+      "type": "object",
+      "additionalProperties": false,
+      "properties": {
+        "ignoreDirectories": {
+          "type": "array",
+          "items": {
+            "type": "string",
+            "minLength": 1,
+            "pattern": "^[^\\\\/]+$"
+          }
+        }
+      }
     }
   }
 }

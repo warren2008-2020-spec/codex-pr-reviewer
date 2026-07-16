@@ -96,10 +96,14 @@ function runHelp() {
   console.log(`codex-pr-reviewer
 
 Usage:
-  codex-pr-reviewer review [path] [--json] [--annotations]
+  codex-pr-reviewer review [path] [--json] [--annotations] [--base <ref>] [--fail-on <level>]
 
 Commands:
   review   Score a pull request diff or repository for review risk.
+
+Options:
+  --base <ref>        Review files changed since a Git ref or SHA.
+  --fail-on <level>   Lowest severity that fails the command: high, medium, low, or never.
 `);
 }
 
