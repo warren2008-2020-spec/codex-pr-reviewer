@@ -36,20 +36,20 @@ Summary: dependency or lockfile change
 Run it without cloning the repository:
 
 ```bash
-npx --yes codex-pr-reviewer@0.2.1 review .
+npx --yes codex-pr-reviewer@v0 review .
 ```
 
 Or install the CLI globally:
 
 ```bash
-npm install --global codex-pr-reviewer@0.2.1
+npm install --global codex-pr-reviewer@v0
 codex-pr-reviewer review .
 ```
 
 To review a specific folder or PR checkout:
 
 ```bash
-npx --yes codex-pr-reviewer@0.2.1 review ./path/to/change
+npx --yes codex-pr-reviewer@v0 review ./path/to/change
 ```
 
 For local development from a clone:
@@ -62,13 +62,13 @@ node ./bin/codex-pr-reviewer.js review .
 JSON output:
 
 ```bash
-npx --yes codex-pr-reviewer@0.2.1 review . --json
+npx --yes codex-pr-reviewer@v0 review . --json
 ```
 
 GitHub Actions annotations:
 
 ```bash
-npx --yes codex-pr-reviewer@0.2.1 review . --annotations
+npx --yes codex-pr-reviewer@v0 review . --annotations
 ```
 
 High-risk findings become `error` annotations, medium-risk findings become `warning`, and low-risk findings become `notice`. When a signal maps to a changed file, the annotation includes its relative path.
@@ -122,7 +122,7 @@ jobs:
           annotations: 'true'
 ```
 
-The `v0` tag tracks compatible updates. Pin `v0.2.1` when a workflow needs an exact release. The Action emits native annotations by default. The repository also includes issue templates, a pull request template, and Codex-friendly `AGENTS.md` guidance for maintainer workflows.
+The `v0` tag tracks compatible updates. Pin `v0.2.2` when a workflow needs an exact release. The Action emits native annotations by default. The repository also includes issue templates, a pull request template, and Codex-friendly `AGENTS.md` guidance for maintainer workflows.
 
 ## Docs
 
