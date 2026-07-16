@@ -1,6 +1,6 @@
 import test from "node:test";
 import assert from "node:assert/strict";
-import { mkdtemp, readFile, writeFile } from "node:fs/promises";
+import { mkdir, mkdtemp, readFile, writeFile } from "node:fs/promises";
 import { tmpdir } from "node:os";
 import path from "node:path";
 import { execFile } from "node:child_process";
@@ -180,6 +180,21 @@ test("can report low-severity findings without blocking when configured", async 
   );
 });
 
+test("ignores generated directories and configured directory names", async () => {
+  const directory = await mkdtemp(path.join(tmpdir(), "cpr-ignored-files-"));
+  await mkdir(path.join(directory, "dist"), { recursive: true });
+  await mkdir(path.join(directory, "generated-output"), { recursive: true });
+  await writeFile(path.join(directory, ".codex-pr-reviewer.json"), JSON.stringify({
+    paths: { ignoreDirectories: ["generated-output"] }
+  }));
+  await writeFile(path.join(directory, "README.md"), "# docs\n");
+  await writeFile(path.join(directory, "dist", "bundle.js"), "generated\n");
+  await writeFile(path.join(directory, "generated-output", "report.json"), "{}\n");
+
+  const report = await reviewJson(directory);
+  assert.deepEqual(report.signals.files, [".codex-pr-reviewer.json", "README.md"]);
+});
+
 test("composite Action resolves the CLI from its own action path", async () => {
   const actionPath = path.join(process.cwd(), "action.yml");
   const action = await readFile(actionPath, "utf8");
@@ -193,7 +208,8 @@ for (const fixture of [
   "dependency-update",
   "lockfile-only",
   "database-migration",
-  "rename-only"
+  "rename-only",
+  "test-mismatch"
 ]) {
   test(`matches the expected risk for ${fixture}`, async () => {
     const directory = path.join(fixturesDirectory, fixture);
